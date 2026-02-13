@@ -1,6 +1,6 @@
-
 import sqlite3
-from flask import Flask, request, jsonify
+import os
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from dotenv import load_dotenv
 from models import init_db, save_spec, get_last_specs
@@ -8,9 +8,10 @@ from llm_service import generate_tasks
 
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="dist", static_url_path="")
 CORS(app)
 init_db()
+
 
 @app.route("/")
 def home():
@@ -47,6 +48,14 @@ def status():
         "database": db_status,
         "llm": "configured"
     })
+
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve(path):
+    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
+        return send_from_directory(app.static_folder, path)
+    return send_from_directory(app.static_folder, "index.html")
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
